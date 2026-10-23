@@ -24,19 +24,16 @@ jobs:
         distribution: 'zulu'
         java-version: '17'
 
-    - name: Set up Android SDK
-      uses: android-actions/setup-android@v3
-
-    - name: Accept Android SDK Licenses
-      run: yes | sdkmanager --licenses > /dev/null
-
-    - name: Install Android Build Tools
-      run: sdkmanager "build-tools;33.0.2" "platforms;android-33"
-
     - name: Setup Gradle
       uses: gradle/actions/setup-gradle@v4
       with:
         gradle-version: '8.7'
+
+    - name: Install Android SDK Build Tools
+      run: |
+        export PATH=$PATH:$ANDROID_HOME/cmdline-tools/latest/bin
+        yes | sdkmanager --licenses > /dev/null || true
+        sdkmanager "build-tools;33.0.2" "platforms;android-33"
 
     - name: Install Cordova
       run: npm install -g cordova
