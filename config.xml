@@ -6,16 +6,27 @@
     <access origin="*" />
     <allow-intent href="http://*/*" />
     <allow-intent href="https://*/*" />
+    
+    <!-- Splash Screen Fix -->
+    <preference name="SplashScreen" value="none" />
+    <preference name="SplashScreenDelay" value="0" />
+    <preference name="AutoHideSplashScreen" value="true" />
+    
     <platform name="android">
+        <preference name="AndroidPersistentFileLocation" value="Compatibility" />
+        <preference name="android-minSdkVersion" value="24" />
+        <preference name="android-targetSdkVersion" value="33" />
+        <preference name="android-compileSdkVersion" value="33" />
+        
+        <!-- Cleartext HTTP Fix for 127.0.0.1 -->
+        <edit-config file="app/src/main/AndroidManifest.xml" mode="merge" target="/manifest/application">
+            <application android:usesCleartextTraffic="true" />
+        </edit-config>
+        
         <icon src="res/icon/android/icon-48.png" density="mdpi" />
         <icon src="res/icon/android/icon-72.png" density="hdpi" />
         <icon src="res/icon/android/icon-96.png" density="xhdpi" />
         <icon src="res/icon/android/icon-144.png" density="xxhdpi" />
         <icon src="res/icon/android/icon-192.png" density="xxxhdpi" />
-        <preference name="AndroidPersistentFileLocation" value="Compatibility" />
-        <preference name="android-minSdkVersion" value="24" />
-        <preference name="android-targetSdkVersion" value="33" />
-        <preference name="android-compileSdkVersion" value="33" />
-        <preference name="GradlePluginKotlinEnabled" value="true" />
     </platform>
 </widget>

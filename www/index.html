@@ -3,143 +3,57 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>PDF Gem · AI Designer</title>
+    <title>PDF Gem</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script type="text/javascript" src="cordova.js"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-        :root {
-            --bg: #0b1120; --surface: rgba(30, 41, 59, 0.7); --border: rgba(255, 255, 255, 0.1);
-            --primary: #3b82f6; --primary-glow: rgba(59, 130, 246, 0.3); --text-main: #f8fafc;
-            --text-muted: #94a3b8; --paper: #ffffff; --paper-text: #1e293b; --font: 'Inter', sans-serif;
-        }
-        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-        body { background: var(--bg); color: var(--text-main); height: 100vh; display: flex; flex-direction: column; overflow: hidden; font-family: var(--font); background-image: radial-gradient(circle at 50% 0%, #1e293b 0%, #0b1120 70%); }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; }
+        body { background: #0f172a; color: white; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
         
-        .toolbar { background: var(--surface); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); padding: 10px 12px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; z-index: 10; }
-        .toolbar-group { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
-        .toolbar-divider { width: 1px; height: 20px; background: var(--border); margin: 0 4px; }
+        .toolbar { background: #1e293b; padding: 12px; display: flex; flex-direction: column; gap: 10px; border-bottom: 1px solid #334155; z-index: 10; }
+        .row { display: flex; gap: 8px; align-items: center; justify-content: space-between; width: 100%; }
         
-        button, select, input[type="color"] { background: rgba(255,255,255,0.05); color: var(--text-main); border: 1px solid var(--border); border-radius: 8px; padding: 6px 10px; font-size: 0.8rem; font-family: var(--font); font-weight: 500; cursor: pointer; transition: all 0.2s; outline: none; }
-        button:hover, select:hover { background: rgba(255,255,255,0.1); }
-        button:active { transform: scale(0.95); }
-        .active-style { background: var(--primary) !important; border-color: var(--primary) !important; box-shadow: 0 0 10px var(--primary-glow); }
-        .btn-primary { background: linear-gradient(135deg, #3b82f6, #8b5cf6); border: none; font-weight: 600; box-shadow: 0 4px 15px var(--primary-glow); color: white; }
-        .btn-primary:hover { opacity: 0.9; }
-        .btn-ai { background: linear-gradient(135deg, #8b5cf6, #d946ef); border: none; font-weight: 600; color: white; }
-        .btn-test { background: #10b981; border: none; color: white; }
-        .btn-test.ok { background: #10b981 !important; box-shadow: 0 0 10px rgba(16,185,129,0.5); }
-        .btn-test.fail { background: #ef4444 !important; }
-        .api-input { background: rgba(0,0,0,0.3); border: 1px solid var(--border); color: white; padding: 6px 8px; border-radius: 6px; font-size: 0.75rem; }
-        .api-input:focus { border-color: var(--primary); }
-        input[type="color"] { padding: 0; width: 30px; height: 30px; cursor: pointer; }
-        input[type="color"]::-webkit-color-swatch-wrapper { padding: 2px; }
-        input[type="color"]::-webkit-color-swatch { border-radius: 4px; border: none; }
+        input, select { background: #0f172a; color: white; border: 1px solid #334155; padding: 10px; border-radius: 6px; font-size: 14px; outline: none; flex: 1; }
+        button { border: none; border-radius: 6px; padding: 10px 15px; font-weight: bold; font-size: 14px; cursor: pointer; transition: 0.1s; white-space: nowrap; }
+        button:active { transform: scale(0.96); }
         
-        .workspace { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
-        .tabs { display: flex; padding: 8px 16px; gap: 8px; background: rgba(0,0,0,0.2); border-bottom: 1px solid var(--border); align-items: center; }
-        .tab { padding: 6px 16px; border-radius: 20px; font-size: 0.8rem; font-weight: 600; color: var(--text-muted); border: 1px solid transparent; transition: 0.3s; cursor: pointer; }
-        .tab.active { background: rgba(255,255,255,0.1); color: white; border-color: var(--border); }
+        .btn-test { background: #10b981; color: white; width: 50px; flex: none; display: flex; justify-content: center; }
+        .btn-ai { background: #8b5cf6; color: white; flex: 1; }
+        .btn-pdf { background: #3b82f6; color: white; flex: 1; font-size: 15px; }
         
-        .editor-container { flex: 1; overflow-y: auto; padding: 20px; display: flex; justify-content: center; align-items: flex-start; background-image: radial-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px); background-size: 20px 20px; }
-        
-        .paper { width: 100%; max-width: 800px; background: var(--paper); color: var(--paper-text); padding: 40px; border-radius: 8px; box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(0,0,0,0.05); outline: none; font-size: 14px; line-height: 1.6; min-height: 100%; transition: transform 0.3s, box-shadow 0.3s; }
-        #inputBox:focus { transform: scale(1.005); box-shadow: 0 15px 40px -5px rgba(0,0,0,0.6), 0 0 0 2px var(--primary); }
+        .workspace { flex: 1; overflow-y: auto; padding: 15px; background: #334155; }
+        .paper { background: white; color: #1e293b; padding: 30px; border-radius: 8px; min-height: 100%; outline: none; font-size: 15px; line-height: 1.6; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
         #outputBox { display: none; }
         
-        .paper h1 { font-size: 24px; margin-bottom: 12px; color: #0f172a; }
-        .paper h2 { font-size: 20px; margin-bottom: 10px; color: #1e293b; }
-        .paper p { margin-bottom: 12px; }
-        .paper ul, .paper ol { padding-left: 20px; margin-bottom: 12px; }
-        .paper table { width: 100%; border-collapse: collapse; margin-bottom: 16px; }
-        .paper th, .paper td { border: 1px solid #cbd5e1; padding: 8px 12px; text-align: left; }
-        .paper th { background: #f8fafc; font-weight: 600; }
-        .paper code { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-family: monospace; color: #e11d48; }
-        
-        .toast-container { position: fixed; bottom: 20px; right: 20px; display: flex; flex-direction: column; gap: 10px; z-index: 1000; max-width: 90%; }
-        .toast { background: var(--surface); backdrop-filter: blur(10px); border: 1px solid var(--border); color: white; padding: 12px 16px; border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); border-left: 4px solid var(--primary); animation: slideIn 0.3s; font-size: 0.85rem; word-wrap: break-word; }
-        .toast.success { border-left-color: #10b981; } .toast.error { border-left-color: #ef4444; } .toast.warning { border-left-color: #f59e0b; }
-        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-        
-        .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center; z-index: 999; padding: 20px; }
-        .overlay-card { background: var(--surface); border: 1px solid var(--border); padding: 24px; border-radius: 12px; max-width: 400px; width: 100%; box-shadow: 0 25px 50px rgba(0,0,0,0.5); }
-        .overlay-card h3 { color: var(--primary); margin-bottom: 12px; font-size: 1.1rem; }
-        .overlay-card p { font-size: 0.9rem; color: var(--text-muted); margin-bottom: 16px; }
-        .overlay-card ol { font-size: 0.85rem; color: var(--text-main); padding-left: 20px; margin-bottom: 16px; line-height: 1.6; }
-        .overlay-card li { margin-bottom: 6px; }
-        .overlay-actions { display: flex; gap: 10px; justify-content: flex-end; }
-        
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+        .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #1e293b; color: white; padding: 12px 24px; border-radius: 30px; font-size: 14px; z-index: 9999; display: none; box-shadow: 0 4px 15px rgba(0,0,0,0.5); border: 1px solid #475569; text-align: center; }
     </style>
 </head>
 <body>
     <div class="toolbar">
-        <div class="toolbar-group">
-            <button id="btn-bold" onclick="formatText('bold')"><b>B</b></button>
-            <button id="btn-italic" onclick="formatText('italic')"><i>I</i></button>
-            <button id="btn-underline" onclick="formatText('underline')"><u>U</u></button>
-            <select onchange="formatText('formatBlock', this.value); this.selectedIndex=0;">
-                <option value="" disabled selected>H</option>
-                <option value="H1">H1</option>
-                <option value="H2">H2</option>
-                <option value="H3">H3</option>
-            </select>
-            <input type="color" onchange="formatText('foreColor', this.value)" title="Text Color">
+        <div class="row">
+            <input type="text" id="apiUrlInput" value="http://127.0.0.1:8787/v1">
+            <input type="text" id="modelInput" value="samu" style="flex: none; width: 70px;">
+            <input type="password" id="apiKeyInput" value="samu123456" style="flex: none; width: 100px;">
+            <button class="btn-test" onclick="testConnection()">🔌</button>
         </div>
-        <div class="toolbar-divider"></div>
-        <div class="toolbar-group">
-            <button onclick="wrapHighlightBox()">⊞ Box</button>
-            <button onclick="formatText('removeFormat')" style="color:#ef4444;">✖ Clr</button>
-        </div>
-        <div class="toolbar-divider"></div>
-        <div class="toolbar-group">
-            <input type="text" id="apiUrlInput" class="api-input" placeholder="URL" value="http://127.0.0.1:8787/v1" style="width: 130px;">
-            <input type="text" id="modelInput" class="api-input" placeholder="Model" value="samu" style="width: 60px;">
-            <input type="password" id="apiKeyInput" class="api-input" placeholder="Key" value="samu123456" style="width: 80px;">
-            <button class="btn-test" id="btnTest" onclick="testConnection()">🔌</button>
-        </div>
-        <div class="toolbar-group">
-            <select id="aiStyle">
+        <div class="row">
+            <select id="aiStyle" style="flex: none; width: 90px;">
                 <option value="Default">Auto</option>
                 <option value="Educational">Edu</option>
                 <option value="Math">Math</option>
             </select>
-            <button class="btn-ai" id="btnAiGenerate" onclick="generateAIDesign()">✨ AI</button>
-            <button class="btn-primary" onclick="downloadPDF()">📄 PDF</button>
+            <button class="btn-ai" id="btnAi" onclick="generateAIDesign()">✨ Generate AI</button>
+            <button class="btn-pdf" onclick="downloadPDF()">📄 Download PDF</button>
         </div>
     </div>
+
     <div class="workspace">
-        <div class="tabs">
-            <div id="tabInput" class="tab active" onclick="switchTab('input')">📝 Input</div>
-            <div id="tabOutput" class="tab" onclick="switchTab('output')">👁️ Preview</div>
-            <button onclick="clearAll()" style="margin-left:auto; background:transparent; border:none; color:#94a3b8; font-size:0.75rem; padding:6px;">🗑️ Clear</button>
-        </div>
-        <div class="editor-container">
-            <div id="inputBox" class="paper" contenteditable="true" spellcheck="false" placeholder="Start writing..."></div>
-            <div id="outputBox" class="paper" contenteditable="false"></div>
-        </div>
+        <div id="inputBox" class="paper" contenteditable="true" placeholder="Type your content here..."></div>
+        <div id="outputBox" class="paper" contenteditable="false"></div>
     </div>
-    <div id="waitingOverlay" class="overlay" style="display:none;">
-        <div class="overlay-card">
-            <h3>⏳ Waiting for Bridge</h3>
-            <p>Prompt sent. SaMu Bridge is holding it.</p>
-            <ol>
-                <li>Open SaMu Bridge app</li>
-                <li>Copy prompt & paste to ChatGPT</li>
-                <li>Copy HTML response</li>
-                <li>Paste back to Bridge & Send</li>
-            </ol>
-            <p style="font-size:0.8rem; text-align:center; color:#64748b;">Elapsed: <span id="waitingElapsed">0s</span></p>
-            <div class="overlay-actions">
-                <button onclick="copyPromptToClipboard()" style="background:#3b82f6; color:white; border:none;">📋 Copy</button>
-                <button onclick="cancelAIGenerate()" style="background:#ef4444; color:white; border:none;">Cancel</button>
-            </div>
-        </div>
-    </div>
-    <div class="toast-container" id="toastContainer"></div>
+
+    <div id="toast" class="toast"></div>
+
     <script>
         class HTMLToPDF {
             constructor(jsPDFLib) { this.lib = jsPDFLib; this.pdf = new jsPDFLib.jsPDF({ unit:'pt', format:'a4', orientation:'portrait', compress:true }); this.pageW = this.pdf.internal.pageSize.getWidth(); this.pageH = this.pdf.internal.pageSize.getHeight(); this.marginX = 42; this.marginTop = 52; this.marginBottom = 56; this.contentW = this.pageW - this.marginX * 2; this.y = this.marginTop; }
@@ -166,31 +80,146 @@
             ensureSpace(h) { if (this.y + h > this.pageH - this.marginBottom) { this.pdf.addPage(); this.y = this.marginTop; } }
             addPageNumbers() { const total = this.pdf.internal.getNumberOfPages(); for (let i = 1; i <= total; i++) { this.pdf.setPage(i); this.pdf.setFont('helvetica', 'normal'); this.pdf.setFontSize(9); this.pdf.setTextColor(148, 163, 184); this.pdf.text(`${i} / ${total}`, this.pageW - this.marginX - 30, this.pageH - 24); } }
         }
-        const inputBox = document.getElementById('inputBox'); const outputBox = document.getElementById('outputBox'); const tabInputBtn = document.getElementById('tabInput'); const tabOutputBtn = document.getElementById('tabOutput'); const apiKeyInput = document.getElementById('apiKeyInput'); const apiUrlInput = document.getElementById('apiUrlInput'); const modelInput = document.getElementById('modelInput'); const toastContainer = document.getElementById('toastContainer'); const btnAiGenerate = document.getElementById('btnAiGenerate'); const btnTest = document.getElementById('btnTest'); const waitingOverlay = document.getElementById('waitingOverlay'); const waitingElapsed = document.getElementById('waitingElapsed');
-        const DEFAULT_URL = 'http://127.0.0.1:8787/v1'; const DEFAULT_MODEL = 'samu'; const DEFAULT_KEY = 'samu123456';
-        let activeAbortController = null; let activePrompt = ''; let waitingStartTime = 0; let waitingTimer = null;
-        function switchTab(tabName) { if (tabName === 'input') { inputBox.style.display = 'block'; outputBox.style.display = 'none'; tabInputBtn.classList.add('active'); tabOutputBtn.classList.remove('active'); inputBox.focus(); } else { syncBoxes(); inputBox.style.display = 'none'; outputBox.style.display = 'block'; tabInputBtn.classList.remove('active'); tabOutputBtn.classList.add('active'); } }
-        inputBox.addEventListener('input', syncBoxes);
-        function syncBoxes() { outputBox.innerHTML = inputBox.innerHTML; Array.from(outputBox.childNodes).forEach(node => { if (node.nodeType === 3 && node.textContent.trim() !== '') { const wrapper = document.createElement('div'); wrapper.textContent = node.textContent; outputBox.replaceChild(wrapper, node); } }); }
-        function clearAll() { if (confirm("Clear all content?")) { inputBox.innerHTML = ''; syncBoxes(); switchTab('input'); showToast("Cleared.", "info"); } }
-        function saveApi() { localStorage.setItem('api_url', apiUrlInput.value.trim() || DEFAULT_URL); localStorage.setItem('api_model', modelInput.value.trim() || DEFAULT_MODEL); localStorage.setItem('api_key', apiKeyInput.value.trim()); showToast("Settings saved!", "success"); }
-        function loadApi() { apiUrlInput.value = localStorage.getItem('api_url') || DEFAULT_URL; modelInput.value = localStorage.getItem('api_model') || DEFAULT_MODEL; const key = localStorage.getItem('api_key'); apiKeyInput.value = key !== null ? key : DEFAULT_KEY; }
-        apiUrlInput.addEventListener('change', saveApi); modelInput.addEventListener('change', saveApi); apiKeyInput.addEventListener('change', saveApi);
-        document.addEventListener('selectionchange', () => { if (document.activeElement !== inputBox) return; ['bold','italic','underline'].forEach(cmd => { const btn = document.getElementById('btn-' + cmd); if (btn) btn.classList.toggle('active-style', document.queryCommandState(cmd)); }); });
-        function formatText(command, value = null) { switchTab('input'); document.execCommand(command, false, value); syncBoxes(); inputBox.focus(); }
-        function wrapHighlightBox() { switchTab('input'); const sel = window.getSelection(); if (!sel.rangeCount) return; const range = sel.getRangeAt(0); if (!inputBox.contains(range.commonAncestorContainer)) return; const content = range.extractContents(); const wrapper = document.createElement('div'); wrapper.style.cssText = 'background:#f8fafc;border-left:4px solid #3b82f6;padding:15px 20px;margin:15px 0;border-radius:0 8px 8px 0;'; wrapper.appendChild(content); range.insertNode(wrapper); sel.removeAllRanges(); const nr = document.createRange(); nr.setStartAfter(wrapper); sel.addRange(nr); syncBoxes(); }
-        async function testConnection() { const baseUrl = apiUrlInput.value.trim() || DEFAULT_URL; const apiKey = apiKeyInput.value.trim(); const modelsUrl = baseUrl.replace(/\/+$/, '') + '/models'; btnTest.disabled = true; btnTest.textContent = '...'; btnTest.classList.remove('ok', 'fail'); try { const headers = {}; if (apiKey) headers['Authorization'] = `Bearer ${apiKey}`; const res = await fetch(modelsUrl, { method: 'GET', headers }); if (!res.ok) throw new Error(`HTTP ${res.status}`); const data = await res.json().catch(() => ({})); const names = (data.data || data.models || []).map(m => m.id || m.name || 'samu'); btnTest.classList.add('ok'); btnTest.textContent = '✅'; showToast(`✅ Bridge OK · ${names.join(', ') || 'samu'}`, "success"); setTimeout(() => { btnTest.textContent = '🔌'; btnTest.disabled = false; }, 3000); } catch(e) { btnTest.classList.add('fail'); btnTest.textContent = '❌'; showToast(`❌ ${e.message || 'Cannot reach Bridge'}`, "error"); setTimeout(() => { btnTest.textContent = '🔌'; btnTest.disabled = false; }, 4000); } }
-        function showWaitingUI(show, prompt = '') { if (show) { activePrompt = prompt; waitingStartTime = Date.now(); waitingElapsed.textContent = '0s'; waitingOverlay.style.display = 'flex'; if (waitingTimer) clearInterval(waitingTimer); waitingTimer = setInterval(() => { waitingElapsed.textContent = `${Math.round((Date.now() - waitingStartTime)/1000)}s`; }, 1000); } else { waitingOverlay.style.display = 'none'; if (waitingTimer) { clearInterval(waitingTimer); waitingTimer = null; } activePrompt = ''; } }
-        function cancelAIGenerate() { if (activeAbortController) activeAbortController.abort(); }
-        async function copyPromptToClipboard() { if (!activePrompt) return; try { await navigator.clipboard.writeText(activePrompt); showToast("✅ Copied!", "success"); } catch(_) { const ta = document.createElement('textarea'); ta.value = activePrompt; ta.style.cssText = 'position:fixed;left:-9999px;'; document.body.appendChild(ta); ta.select(); try { document.execCommand('copy'); showToast("✅ Copied!", "success"); } catch { showToast("❌ Copy failed", "error"); } document.body.removeChild(ta); } }
-        function buildPrompt(rawHTML, styleContext) { const spec = { "Default": `Professional layout.`, "Educational": `H1 titles, definition tables, ⭐ key points.`, "Math": `Monospace formula boxes, numbered steps.` }[styleContext] || `Professional formatting.`; return `Format the following content as professional HTML for a PDF document.\n\nSTYLE: ${styleContext}\n${spec}\n\nOUTPUT REQUIREMENTS:\n- Output ONLY raw HTML — no \`\`\` fences, no explanations\n- No <html>, <head>, <body>, or <style> tags — inner content only\n- Use INLINE styles only\n- Preserve every word, number, and fact EXACTLY\n\nCONTENT TO FORMAT:\n${rawHTML}`; }
-        async function generateAIDesign() { const rawText = inputBox.innerText.trim(); const rawHTML = inputBox.innerHTML.trim(); if (!rawText) { showToast("Type something first.", "warning"); return; } const styleContext = document.getElementById('aiStyle').value; const baseUrl = apiUrlInput.value.trim() || DEFAULT_URL; const model = modelInput.value.trim() || DEFAULT_MODEL; const apiKey = apiKeyInput.value.trim(); const prompt = buildPrompt(rawHTML, styleContext); const endpoint = baseUrl.replace(/\/+$/, '') + '/chat/completions'; const headers = { 'Content-Type': 'application/json' }; if (apiKey) headers['Authorization'] = `Bearer ${apiKey}`; const payload = { model, messages: [{ role:'user', content: prompt }], stream:false }; activeAbortController = new AbortController(); btnAiGenerate.disabled = true; btnAiGenerate.innerHTML = "⏳"; showWaitingUI(true, prompt); try { const res = await fetch(endpoint, { method:'POST', headers, body: JSON.stringify(payload), signal: activeAbortController.signal }); if (!res.ok) throw new Error(`HTTP ${res.status}`); const text = await res.text(); let content = parseAIResponse(text); content = content.replace(/^```html\s*/i, '').replace(/^```\s*/, '').replace(/```\s*$/i, '').trim(); if (!content) throw new Error("Empty response"); inputBox.innerHTML = content; syncBoxes(); showToast(`✅ Rendered!`, "success"); switchTab('output'); } catch(e) { if (e.name === 'AbortError') showToast("Cancelled.", "info"); else showToast(`❌ ${e.message || 'Bridge error'}`, "error"); } finally { activeAbortController = null; showWaitingUI(false); btnAiGenerate.disabled = false; btnAiGenerate.innerHTML = "✨ AI"; } }
-        function parseAIResponse(raw) { if (!raw || !raw.trim()) throw new Error("Empty response"); const t = raw.trim(); try { return extractContent(JSON.parse(t)); } catch(_) {} if (t.startsWith('data:') || t.includes('\ndata:')) { let combined = ''; let last = null; t.split(/\r?\n/).forEach(line => { if (!line.startsWith('data:')) return; const body = line.slice(5).trim(); if (!body || body === '[DONE]') return; try { const o = JSON.parse(body); last = o; const d = o.choices?.[0]?.delta?.content || o.choices?.[0]?.message?.content || o.message?.content || ''; if (d) combined += d; } catch(_) {} }); if (combined) return combined; if (last) return extractContent(last); } if (/<[a-z][\s\S]*>/i.test(t)) return t; throw new Error("Unknown response format"); }
-        function extractContent(data) { let c = data.choices?.[0]?.message?.content ?? data.choices?.[0]?.text ?? data.message?.content ?? data.content ?? data.response; if (Array.isArray(c)) c = c.map(p => p.text || p.content || '').join(''); if (c == null) throw new Error("No content."); return String(c).trim(); }
-        async function downloadPDF() { switchTab('output'); if (!window.jspdf || !window.jspdf.jsPDF) { showToast("❌ PDF engine not loaded.", "error"); return; } showToast(`Generating PDF...`, "info"); try { const renderer = new HTMLToPDF(window.jspdf); await renderer.generateAsync(outputBox); const totalPages = renderer.pdf.internal.getNumberOfPages(); if (window.cordova) { const dataUri = renderer.pdf.output('datauristring'); saveAndOpenCordovaPDF(dataUri, 'AI_Document.pdf'); showToast(`✅ ${totalPages} pages!`, "success"); } else { renderer.pdf.save('AI_Document.pdf'); showToast(`✅ Downloaded!`, "success"); } } catch(e) { console.error(e); showToast(`❌ Failed.`, "error"); } }
-        function saveAndOpenCordovaPDF(dataUri, fileName) { try { const base64 = dataUri.split(',')[1]; const bin = atob(base64); const bytes = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i); const blob = new Blob([bytes], { type: 'application/pdf' }); if (window.cordova && cordova.file) { const downloadDir = cordova.file.externalRootDirectory + 'Download/'; window.resolveLocalFileSystemURL(downloadDir, (dirEntry) => { dirEntry.getFile(fileName, { create: true, exclusive: false }, (fileEntry) => { fileEntry.createWriter((fileWriter) => { fileWriter.onwriteend = () => { showToast("✅ Saved to Downloads!", "success"); if (cordova.plugins && cordova.plugins.fileOpener2) { cordova.plugins.fileOpener2.open(fileEntry.nativeURL, 'application/pdf', { error: function(e) { showToast("Saved in Downloads. Open via WPS.", "warning"); } }); } }; fileWriter.write(blob); }); }); }); } else { const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = fileName; a.click(); URL.revokeObjectURL(url); } } catch (err) { showToast("❌ Error saving", "error"); } }
-        function showToast(msg, type = 'info') { const t = document.createElement('div'); t.className = `toast ${type}`; t.innerText = msg; toastContainer.appendChild(t); setTimeout(() => { t.style.animation = 'slideIn 0.3s ease-out reverse'; t.style.opacity = '0'; setTimeout(() => t.remove(), 300); }, 5000); }
-        window.onload = () => { loadApi(); switchTab('input'); };
+
+        const inputBox = document.getElementById('inputBox');
+        const outputBox = document.getElementById('outputBox');
+        const toast = document.getElementById('toast');
+        
+        function showToast(msg) {
+            toast.innerText = msg;
+            toast.style.display = 'block';
+            setTimeout(() => toast.style.display = 'none', 3500);
+        }
+
+        // Reliable Fetch using Cordova Advanced HTTP (bypasses WebView CORS blocks completely)
+        async function fetchAPI(endpoint, data = null) {
+            const url = document.getElementById('apiUrlInput').value.trim().replace(/\/+$/, '') + endpoint;
+            const key = document.getElementById('apiKeyInput').value.trim();
+            const headers = { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key };
+            
+            if (window.cordova && cordova.plugin && cordova.plugin.http) {
+                return new Promise((resolve, reject) => {
+                    cordova.plugin.http.setDataSerializer('json');
+                    if (data) {
+                        cordova.plugin.http.post(url, data, headers, (res) => {
+                            try { resolve(JSON.parse(res.data)); } catch(e) { resolve(res.data); }
+                        }, (err) => reject(new Error("HTTP " + err.status)));
+                    } else {
+                        cordova.plugin.http.get(url, {}, headers, (res) => {
+                            try { resolve(JSON.parse(res.data)); } catch(e) { resolve(res.data); }
+                        }, (err) => reject(new Error("HTTP " + err.status)));
+                    }
+                });
+            } else {
+                const opts = { method: data ? 'POST' : 'GET', headers };
+                if(data) opts.body = JSON.stringify(data);
+                const res = await fetch(url, opts);
+                if(!res.ok) throw new Error("HTTP " + res.status);
+                return await res.json();
+            }
+        }
+
+        async function testConnection() {
+            showToast("Testing Bridge...");
+            try {
+                const data = await fetchAPI('/models');
+                showToast("✅ Bridge Connected! Models: " + (data.data ? data.data[0].id : 'OK'));
+            } catch(e) {
+                showToast("❌ Cannot reach Bridge: " + e.message);
+            }
+        }
+
+        async function generateAIDesign() {
+            const text = inputBox.innerText.trim();
+            if(!text) return showToast("Type content first!");
+            
+            const btn = document.getElementById('btnAi');
+            btn.innerText = "⏳ Waiting...";
+            btn.disabled = true;
+            
+            const model = document.getElementById('modelInput').value.trim();
+            const style = document.getElementById('aiStyle').value;
+            const prompt = `Format this text as a beautiful, professional HTML document for PDF export. Use inline styles, beautiful layouts, headings, and colors. Style requested: ${style}. Output ONLY raw HTML code, no markdown, no explanations. Text to format:\n\n${text}`;
+            
+            try {
+                const data = await fetchAPI('/chat/completions', { 
+                    model: model, 
+                    messages: [{role: 'user', content: prompt}],
+                    stream: false
+                });
+                
+                let html = data.choices[0].message.content;
+                html = html.replace(/```html/gi, '').replace(/```/g, '').trim();
+                
+                outputBox.innerHTML = html;
+                outputBox.style.display = 'block';
+                inputBox.style.display = 'none';
+                showToast("✅ AI Generated!");
+                
+            } catch(e) {
+                showToast("❌ AI Failed: " + e.message);
+            } finally {
+                btn.innerText = "✨ Generate AI";
+                btn.disabled = false;
+            }
+        }
+
+        async function downloadPDF() {
+            if(!window.jspdf) return showToast("PDF engine not ready.");
+            const target = outputBox.style.display === 'block' ? outputBox : inputBox;
+            if(!target.innerText.trim()) return showToast("No content to save.");
+            
+            showToast("Generating PDF...");
+            try {
+                const renderer = new HTMLToPDF(window.jspdf);
+                await renderer.generateAsync(target);
+                const totalPages = renderer.pdf.internal.getNumberOfPages();
+                const fileName = 'PDF_Gem_' + Date.now() + '.pdf';
+                
+                if (window.cordova && cordova.file) {
+                    const dataUri = renderer.pdf.output('datauristring');
+                    const base64 = dataUri.split(',')[1];
+                    const bin = atob(base64);
+                    const bytes = new Uint8Array(bin.length);
+                    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+                    const blob = new Blob([bytes], { type: 'application/pdf' });
+                    
+                    const downloadDir = cordova.file.externalRootDirectory + 'Download/';
+                    window.resolveLocalFileSystemURL(downloadDir, (dirEntry) => {
+                        dirEntry.getFile(fileName, { create: true, exclusive: false }, (fileEntry) => {
+                            fileEntry.createWriter((fileWriter) => {
+                                fileWriter.onwriteend = () => {
+                                    showToast(`✅ Saved to Downloads (${totalPages} pages)!`);
+                                    if (cordova.plugins && cordova.plugins.fileOpener2) {
+                                        cordova.plugins.fileOpener2.open(fileEntry.nativeURL, 'application/pdf', {
+                                            error: function() { showToast("Saved. Open via WPS Office."); }
+                                        });
+                                    }
+                                };
+                                fileWriter.write(blob);
+                            });
+                        });
+                    });
+                } else {
+                    renderer.pdf.save(fileName);
+                    showToast(`✅ Downloaded (${totalPages} pages)!`);
+                }
+            } catch(e) {
+                console.error(e);
+                showToast("❌ PDF generation failed.");
+            }
+        }
+
+        // Load defaults
+        document.getElementById('apiUrlInput').value = localStorage.getItem('api_url') || 'http://127.0.0.1:8787/v1';
+        document.getElementById('modelInput').value = localStorage.getItem('api_model') || 'samu';
+        document.getElementById('apiKeyInput').value = localStorage.getItem('api_key') || 'samu123456';
+        
+        ['apiUrlInput', 'modelInput', 'apiKeyInput'].forEach(id => {
+            document.getElementById(id).addEventListener('change', (e) => {
+                localStorage.setItem(id === 'apiUrlInput' ? 'api_url' : id === 'modelInput' ? 'api_model' : 'api_key', e.target.value);
+            });
+        });
     </script>
 </body>
 </html>
