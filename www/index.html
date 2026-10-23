@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF Gem · Vector Engine</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script type="text/javascript" src="cordova.js"></script>
+    <style>
+        :root { --bg-dark: #0f172a; --surface-dark: #1e293b; --surface-hover: #334155; --primary: #3b82f6; --primary-hover: #2563eb; --accent: #8b5cf6; --danger: #ef4444; --text-main: #f8fafc; --text-muted: #94a3b8; --border-color: #334155; --paper-bg: #ffffff; --paper-text: #1e293b; font-family: 'Segoe UI', system-ui, sans-serif; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { background-color: var(--bg-dark); color: var(--text-main); height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+        .toolbar-container { background-color: var(--surface-dark); border-bottom: 1px solid var(--border-color); padding: 10px 16px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; z-index: 10; flex-shrink: 0; }
+        .toolbar-section { display: flex; align-items: center; gap: 6px; padding-right: 12px; border-right: 1px solid var(--border-color); flex-wrap: wrap; }
+        .toolbar-section:last-child { border-right: none; padding-right: 0; }
+        .toolbar-title { font-size: 0.7rem; text-transform: uppercase; color: var(--text-muted); margin-right: 6px; font-weight: 600; }
+        button, select, input[type="color"] { background-color: transparent; color: var(--text-main); border: 1px solid var(--border-color); border-radius: 6px; padding: 6px 10px; font-size: 0.85rem; cursor: pointer; transition: all 0.2s; outline: none; }
+        button:hover, select:hover { background-color: var(--surface-hover); }
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
+        .btn-icon { padding: 6px 8px; font-weight: bold; }
+        .active-style { background-color: #facc15 !important; color: #000 !important; border-color: #facc15 !important; }
+        .btn-primary { background-color: var(--primary); color: white; border-color: var(--primary); font-weight: 500; }
+        .btn-primary:hover { background-color: var(--primary-hover); }
+        .btn-ai { background: linear-gradient(135deg, var(--accent), var(--primary)); color: white; border: none; font-weight: 600; }
+        .btn-test { background-color: #10b981 !important; color: white !important; border: none !important; font-weight: 600; }
+        .btn-test.ok { background-color: #10b981 !important; } .btn-test.fail { background-color: var(--danger) !important; }
+        .api-input { background-color: var(--bg-dark); color: var(--text-main); border: 1px solid var(--border-color); border-radius: 6px; padding: 6px 8px; font-size: 0.78rem; outline: none; }
+        .api-input:focus { border-color: var(--primary); }
+        .btn-api-action { padding: 6px 8px; font-size: 0.9rem; border-radius: 4px; }
+        input[type="color"] { padding: 0; height: 30px; width: 38px; cursor: pointer; }
+        input[type="color"]::-webkit-color-swatch-wrapper { padding: 2px; } input[type="color"]::-webkit-color-swatch { border-radius: 4px; border: none; }
+        .workspace { display: flex; flex: 1; flex-direction: column; background-color: var(--bg-dark); overflow: hidden; min-height: 0; }
+        .panel-header { padding: 8px 16px; background-color: var(--surface-dark); display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); flex-shrink: 0; }
+        .tabs-container { display: flex; gap: 8px; }
+        .tab-btn { display: flex; align-items: center; gap: 6px; font-weight: 600; color: var(--text-muted); border: 1px solid transparent; font-size: 0.82rem; }
+        .tab-btn.active { background-color: var(--surface-hover); color: var(--text-main); border-color: var(--border-color); }
+        .status-dot { width: 8px; height: 8px; border-radius: 50%; background-color: var(--text-muted); }
+        .status-dot.live { background-color: #10b981; box-shadow: 0 0 8px rgba(16, 185, 129, 0.5); }
+        .status-dot.readonly { background-color: var(--accent); }
+        .btn-clear { background-color: rgba(239, 68, 68, 0.1); color: var(--danger); border: 1px solid rgba(239, 68, 68, 0.3); font-size: 0.75rem; padding: 5px 12px; font-weight: bold; }
+        .editor-container { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 24px; background-color: var(--border-color); display: block; min-height: 0; }
+        .editable-area { width: 100%; max-width: 800px; margin: 0 auto; min-height: calc(100% - 0px); background-color: var(--paper-bg); color: var(--paper-text); padding: 40px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); border-radius: 4px; outline: none; font-size: 14px !important; line-height: 24px !important; }
+        #inputBox { border: 2px solid transparent; cursor: text; } #inputBox:focus { border-color: var(--primary); }
+        #outputBox { cursor: default; display: none; }
+        .editable-area p, .editable-area h1, .editable-area h2, .editable-area h3, .editable-area ul, .editable-area ol, .editable-area li, .editable-area table, .editable-area code, .editable-area pre { margin-bottom: 12px; }
+        .editable-area h1, .editable-area h2, .editable-area h3 { margin-bottom: 10px; color: #111827; }
+        .editable-area ul, .editable-area ol { padding-left: 20px; }
+        .editable-area table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
+        .editable-area table, .editable-area th, .editable-area td { border: 1px solid #cbd5e1; }
+        .editable-area th, .editable-area td { padding: 8px 12px; text-align: left; }
+        .editable-area th { background-color: #f1f5f9; }
+        .editable-area code { background-color: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-family: monospace; color: #e11d48; }
+        .toast-container { position: fixed; bottom: 20px; right: 20px; display: flex; flex-direction: column; gap: 10px; z-index: 1000; max-width: 90%; }
+        .toast { background-color: var(--surface-dark); color: var(--text-main); padding: 12px 16px; border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); border-left: 4px solid var(--primary); animation: slideIn 0.3s ease-out; font-size: 0.83rem; line-height: 1.4; word-wrap: break-word; }
+        .toast.success { border-left-color: #10b981; } .toast.error { border-left-color: var(--danger); } .toast.warning { border-left-color: #f59e0b; }
+        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        .waiting-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.9); backdrop-filter: blur(6px); z-index: 999; display: flex; align-items: center; justify-content: center; padding: 20px; }
+        .waiting-card { background: var(--surface-dark); border: 1px solid var(--border-color); border-radius: 12px; padding: 24px; max-width: 500px; width: 100%; box-shadow: 0 20px 60px rgba(0,0,0,0.6); }
+        .waiting-title { font-size: 1.15rem; font-weight: 700; margin-bottom: 16px; color: var(--accent); }
+        .waiting-body { font-size: 0.88rem; line-height: 1.6; }
+        .waiting-body p { color: var(--text-main); margin-bottom: 10px; }
+        .waiting-body ol { padding-left: 20px; margin: 12px 0; color: var(--text-main); }
+        .waiting-body ol li { margin-bottom: 8px; }
+        .waiting-status { color: var(--text-muted); font-size: 0.82rem; padding: 12px 0; border-top: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color); margin: 16px 0; text-align: center; font-family: monospace; }
+        .waiting-actions { display: flex; gap: 10px; justify-content: flex-end; }
+        .waiting-actions button { padding: 8px 16px; font-weight: 600; }
+        .btn-cancel { background: var(--danger) !important; color: white !important; border: none !important; }
+    </style>
+</head>
+<body>
+    <div class="toolbar-container">
+        <div class="toolbar-section">
+            <span class="toolbar-title">Styles</span>
+            <button class="btn-icon" id="btn-bold" onclick="formatText('bold')" title="Bold"><b>B</b></button>
+            <button class="btn-icon" id="btn-italic" onclick="formatText('italic')" title="Italic"><i>I</i></button>
+            <button class="btn-icon" id="btn-underline" onclick="formatText('underline')" title="Underline"><u>U</u></button>
+            <select onchange="formatText('formatBlock', this.value); this.selectedIndex=0;" title="Headers">
+                <option value="" disabled selected>Heading</option>
+                <option value="H1">Header 1</option>
+                <option value="H2">Header 2</option>
+                <option value="H3">Header 3</option>
+            </select>
+            <button class="btn-icon" onclick="formatCode()" title="Inline Code">&lt;/&gt;</button>
+            <input type="color" onchange="formatText('foreColor', this.value)" title="Text Color">
+            <button class="btn-icon" id="btn-insertUnorderedList" onclick="formatText('insertUnorderedList')" title="Bullet List">• List</button>
+            <button class="btn-icon" id="btn-insertOrderedList" onclick="formatText('insertOrderedList')" title="Number List">1. List</button>
+            <button class="btn-icon" onclick="wrapHighlightBox()" title="Highlight Box">⊞ Box</button>
+            <button class="btn-icon" onclick="formatText('removeFormat')" title="Remove Formatting" style="color:var(--danger);">✖ Normal</button>
+        </div>
+        <div class="toolbar-section">
+            <input type="text" id="apiUrlInput" class="api-input" placeholder="Bridge URL" value="http://127.0.0.1:8787/v1" style="width: 190px;">
+            <input type="text" id="modelInput" class="api-input" placeholder="Model" value="samu" style="width: 75px;">
+            <input type="password" id="apiKeyInput" class="api-input" placeholder="Bearer" value="samu123456" style="width: 110px;">
+            <button class="btn-api-action" onclick="saveApi()" title="Save">💾</button>
+            <button class="btn-api-action" onclick="deleteApi()" title="Clear">🗑️</button>
+            <button class="btn-test" id="btnTest" onclick="testConnection()" title="Test Bridge connection">🔌 Test</button>
+        </div>
+        <div class="toolbar-section">
+            <select id="aiStyle" title="Document Style">
+                <option value="Default">Auto</option>
+                <option value="Educational">Educational</option>
+                <option value="Math">Math</option>
+            </select>
+            <button class="btn-ai" id="btnAiGenerate" onclick="generateAIDesign()">✨ AI Generate</button>
+            <button class="btn-primary" onclick="downloadPDF()">📄 Save PDF</button>
+        </div>
+    </div>
+    <div class="workspace">
+        <div class="panel-header">
+            <div class="tabs-container">
+                <button id="tabInput" class="tab-btn active" onclick="switchTab('input')"><div class="status-dot live"></div> 📝 Input</button>
+                <button id="tabOutput" class="tab-btn" onclick="switchTab('output')"><div class="status-dot readonly"></div> 👁️ Output</button>
+            </div>
+            <button class="btn-clear" onclick="clearAll()">🗑️ Clear All</button>
+        </div>
+        <div class="editor-container">
+            <div id="inputBox" class="editable-area" contenteditable="true" spellcheck="false" placeholder="Type or paste content here..."></div>
+            <div id="outputBox" class="editable-area" contenteditable="false"></div>
+        </div>
+    </div>
+    <div id="waitingOverlay" class="waiting-overlay" style="display:none;">
+        <div class="waiting-card">
+            <div class="waiting-title">⏳ Waiting for Bridge reply...</div>
+            <div class="waiting-body">
+                <p>Prompt bhej diya gaya hai. SaMu Bridge app kholo:</p>
+                <ol><li>Prompt copy karo</li><li>ChatGPT / Claude me paste karo</li><li>HTML response copy karo</li><li>Bridge me paste karke <b>Send reply</b> dabao</li></ol>
+            </div>
+            <div class="waiting-status">Elapsed: <span id="waitingElapsed">0s</span> · Bridge limit: 5 min</div>
+            <div class="waiting-actions">
+                <button onclick="copyPromptToClipboard()">📋 Copy Prompt</button>
+                <button class="btn-cancel" onclick="cancelAIGenerate()">❌ Cancel</button>
+            </div>
+        </div>
+    </div>
+    <div class="toast-container" id="toastContainer"></div>
+    <script>
+        class HTMLToPDF {
+            constructor(jsPDFLib) { this.lib = jsPDFLib; this.pdf = new jsPDFLib.jsPDF({ unit:'pt', format:'a4', orientation:'portrait', compress:true }); this.pageW = this.pdf.internal.pageSize.getWidth(); this.pageH = this.pdf.internal.pageSize.getHeight(); this.marginX = 42; this.marginTop = 52; this.marginBottom = 56; this.contentW = this.pageW - this.marginX * 2; this.y = this.marginTop; }
+            defaultStyle() { return { bold:false, italic:false, underline:false, color:[51,65,85], size:12, font:'helvetica', align:'left', indent:0, pageBreak: false }; }
+            async generateAsync(rootEl) { const blocks = []; this.collectBlocks(rootEl, blocks, this.defaultStyle()); for (let i = 0; i < blocks.length; i++) { this.renderBlock(blocks[i]); if (i % 25 === 0) await new Promise(r => setTimeout(r, 0)); } this.addPageNumbers(); return this.pdf; }
+            collectBlocks(parent, out, inherited) { for (const child of parent.children) { const tag = child.tagName.toLowerCase(); const st = this.mergeStyle(child, inherited); const styleStr = child.getAttribute('style') || ''; if (styleStr.includes('page-break-after') || styleStr.includes('break-after') || styleStr.includes('page-break-before') || styleStr.includes('break-before')) { st.pageBreak = true; } if (tag === 'table') { out.push(this.blockTable(child, st)); if(st.pageBreak) out.push({kind:'pagebreak'}); continue; } if (tag === 'pre') { out.push(this.blockPre(child, st)); if(st.pageBreak) out.push({kind:'pagebreak'}); continue; } if (tag === 'ul' || tag === 'ol') { out.push(this.blockList(child, st, tag==='ol')); if(st.pageBreak) out.push({kind:'pagebreak'}); continue; } if (tag === 'hr') { out.push({ kind:'hr', ...st }); if(st.pageBreak) out.push({kind:'pagebreak'}); continue; } const isBlockish = this.isBlockTag(tag) || this.hasBlockChildren(child); if (isBlockish) { const runs = this.extractRuns(child, st); if (runs.some(r => r.text.trim())) { out.push({ kind:'text', tag, runs, ...st }); } this.collectBlocks(child, out, st); } else { const runs = this.extractRuns(child, st); if (runs.some(r => r.text.trim())) { out.push({ kind:'text', tag:'span', runs, ...st }); } } if(st.pageBreak && isBlockish) out.push({kind:'pagebreak'}); } }
+            isBlockTag(t) { return ['h1','h2','h3','h4','h5','h6','p','div','blockquote','section','article','header','footer','li','nav','main','aside'].includes(t); }
+            hasBlockChildren(el) { for (const c of el.children) { const t = c.tagName.toLowerCase(); if (this.isBlockTag(t) || t==='table' || t==='ul' || t==='ol' || t==='pre') return true; } return false; }
+            mergeStyle(el, base) { const st = { ...base }; const s = el.style; const tag = el.tagName.toLowerCase(); if (tag === 'h1') { st.size=28; st.bold=true; st.spaceBefore=18; st.spaceAfter=10; st.color=[17,24,39]; } else if (tag === 'h2') { st.size=22; st.bold=true; st.spaceBefore=16; st.spaceAfter=8; st.color=[17,24,39]; } else if (tag === 'h3') { st.size=18; st.bold=true; st.spaceBefore=12; st.spaceAfter=6; st.color=[17,24,39]; } else if (tag === 'p') { st.spaceAfter = st.spaceAfter || 10; } if (s.fontSize) { const fs = parseFloat(s.fontSize); if (fs > 0) st.size = Math.min(fs * 0.75, 60); } if (s.fontWeight) { const w = String(s.fontWeight).toLowerCase(); if (w==='bold' || w==='bolder' || parseInt(w)>=600) st.bold = true; } if (s.fontStyle === 'italic') st.italic = true; if (s.textDecoration && s.textDecoration.includes('underline')) st.underline = true; if (s.color) { const c = this.parseColor(s.color); if (c) st.color = c; } return st; }
+            extractRuns(el, base) { const runs = []; const walk = (node, st) => { for (const child of node.childNodes) { if (child.nodeType === 3) { if (child.textContent) runs.push({ ...st, text: child.textContent }); } else if (child.nodeType === 1) { if (child.tagName === 'BR') { runs.push({ ...st, text: '\n' }); continue; } walk(child, this.mergeStyle(child, st)); } } }; walk(el, base); return runs; }
+            parseColor(str) { if (!str) return null; str = String(str).trim(); if (str.startsWith('#')) { let h = str.slice(1); if (h.length === 3) h = h.split('').map(c => c+c).join(''); if (h.length === 8) h = h.slice(0, 6); return [parseInt(h.slice(0,2),16), parseInt(h.slice(2,4),16), parseInt(h.slice(4,6),16)]; } const m = str.match(/rgba?\(([^)]+)\)/); if (m) { const p = m[1].split(',').map(x => parseFloat(x.trim())); return [p[0]|0, p[1]|0, p[2]|0]; } return [51,65,85]; }
+            blockTable(el, st) { const rows = []; for (const tr of el.querySelectorAll('tr')) { const cells = []; for (const td of tr.children) { if (td.tagName !== 'TD' && td.tagName !== 'TH') continue; const isHdr = td.tagName === 'TH'; const cst = this.mergeStyle(td, isHdr ? { ...st, bold:true, color:[30,41,59] } : st); cells.push({ runs: this.extractRuns(td, cst), isHeader: isHdr, align: cst.align || 'left' }); } if (cells.length) rows.push(cells); } return { kind:'table', rows, ...st }; }
+            blockPre(el, st) { return { kind:'code', text: el.textContent, ...st, size: st.size || 10 }; }
+            blockList(el, st, ordered) { const items = []; let idx = 1; for (const li of el.children) { if (li.tagName.toLowerCase() !== 'li') continue; const lst = this.mergeStyle(li, st); items.push({ runs: this.extractRuns(li, lst), bullet: ordered ? `${idx}.` : '•' }); idx++; } return { kind:'list', items, ordered, ...st }; }
+            renderBlock(b) { if (b.kind === 'pagebreak') { this.pdf.addPage(); this.y = this.marginTop; return; } if (b.spaceBefore) this.y += b.spaceBefore; if (b.kind === 'text') this.renderTextBlock(b); else if (b.kind === 'list') this.renderList(b); else if (b.kind === 'table') this.renderTable(b); else if (b.kind === 'code') this.renderCode(b); else if (b.kind === 'hr') this.renderHR(b); if (b.spaceAfter) this.y += b.spaceAfter; }
+            renderTextBlock(b) { const indent = b.indent || 0; const maxW = this.contentW - indent; const lines = this.layoutRuns(b.runs, b.size, maxW); const lineH = b.size * 1.4; for (const line of lines) { this.ensureSpace(lineH); let x = this.marginX + indent; for (const run of line) { if (!run.text) continue; this.setFont(run); this.pdf.setTextColor(...run.color); this.pdf.text(run.text, x, this.y + run.size * 0.85); x += this.textWidth(run.text, run); } this.y += lineH; } }
+            layoutRuns(runs, size, maxW) { const words = []; for (const r of runs) { const parts = String(r.text).split(/(\s+)/); for (const p of parts) { if (!p) continue; if (p === '\n') { words.push({ newline:true }); continue; } words.push({ ...r, text: p }); } } const lines = []; let cur = []; let curW = 0; for (const w of words) { if (w.newline) { if (cur.length) { lines.push(cur); cur = []; curW = 0; } continue; } const isSpace = /^\s+$/.test(w.text); const ww = isSpace ? size * 0.3 : this.textWidth(w.text, w); if (ww > maxW) { let tempText = w.text; while(tempText.length > 0) { let charCount = Math.floor(maxW / (ww/tempText.length)); if (charCount === 0) charCount = 1; let part = tempText.substring(0, charCount); cur.push({ ...w, text: part }); lines.push(cur); cur = []; curW = 0; tempText = tempText.substring(charCount); } continue; } if (curW + ww > maxW && cur.length && !isSpace) { while (cur.length && /^\s+$/.test(cur[cur.length-1].text)) { cur.pop(); curW -= size*0.3; } lines.push(cur); cur = []; curW = 0; } cur.push(isSpace ? { ...w, text:' ' } : w); curW += ww; } if (cur.length) lines.push(cur); return lines; }
+            renderList(b) { const indent = b.indent || 0; const bulletW = 18; const lineH = b.size * 1.4; for (const item of b.items) { const lines = this.layoutRuns(item.runs, b.size, this.contentW - indent - bulletW); if (!lines.length) continue; this.ensureSpace(lineH); this.setFont({ ...b, bold:false, size:b.size }); this.pdf.setTextColor(51, 65, 85); this.pdf.text(item.bullet, this.marginX + indent, this.y + b.size * 0.85); for (const line of lines) { this.ensureSpace(lineH); let x = this.marginX + indent + bulletW; for (const run of line) { this.setFont({ ...run, size: b.size }); this.pdf.setTextColor(...run.color); this.pdf.text(run.text, x, this.y + b.size * 0.85); x += this.textWidth(run.text, { ...run, size: b.size }); } this.y += lineH; } this.y += 4; } }
+            renderTable(b) { if (!b.rows.length) return; const cols = Math.max(...b.rows.map(r => r.length)); const colW = this.contentW / cols; const pad = 6; const fs = b.size || 12; const lineH = fs * 1.35; for (const row of b.rows) { const cellLines = []; let maxLines = 1; for (let i = 0; i < cols; i++) { const cell = row[i] || { runs: [] }; const text = cell.runs.map(r => r.text).join(''); this.pdf.setFontSize(fs); const lines = text ? this.pdf.splitTextToSize(text, colW - pad*2) : ['']; cellLines.push(lines); maxLines = Math.max(maxLines, lines.length); } const rowH = maxLines * lineH + pad * 2; this.ensureSpace(rowH); let x = this.marginX; for (let i = 0; i < cols; i++) { const cell = row[i] || {}; if (cell.isHeader) { this.pdf.setFillColor(241, 245, 249); this.pdf.rect(x, this.y, colW, rowH, 'F'); } this.pdf.setDrawColor(203, 213, 225); this.pdf.setLineWidth(0.5); this.pdf.rect(x, this.y, colW, rowH); this.pdf.setFont('helvetica', cell.isHeader ? 'bold' : 'normal'); this.pdf.setFontSize(fs); this.pdf.setTextColor(51, 65, 85); for (let li = 0; li < cellLines[i].length; li++) { this.pdf.text(cellLines[i][li], x + pad, this.y + pad + fs * 0.85 + li * lineH); } x += colW; } this.y += rowH; } }
+            renderCode(b) { const fs = b.size || 10; const pad = 12; const lineH = fs * 1.35; this.pdf.setFont('courier', 'normal'); this.pdf.setFontSize(fs); const rawLines = String(b.text || '').split('\n'); const wrapped = []; for (const line of rawLines) { const parts = line ? this.pdf.splitTextToSize(line, this.contentW - pad*2) : ['']; wrapped.push(...parts); } const totalH = wrapped.length * lineH + pad * 2; this.ensureSpace(totalH); this.pdf.setFillColor(15, 23, 42); this.pdf.rect(this.marginX, this.y, this.contentW, totalH, 'F'); this.pdf.setFont('courier', 'normal'); this.pdf.setFontSize(fs); this.pdf.setTextColor(226, 232, 240); let ty = this.y + pad + fs * 0.85; for (const line of wrapped) { this.pdf.text(line, this.marginX + pad, ty); ty += lineH; } this.y += totalH; }
+            renderHR() { this.ensureSpace(10); this.pdf.setDrawColor(200, 200, 200); this.pdf.setLineWidth(0.7); this.pdf.line(this.marginX, this.y + 4, this.pageW - this.marginX, this.y + 4); this.y += 10; }
+            setFont(style) { const fam = style.font || 'helvetica'; let variant = 'normal'; if (style.bold && style.italic) variant = 'bolditalic'; else if (style.bold) variant = 'bold'; else if (style.italic) variant = 'italic'; try { this.pdf.setFont(fam, variant); } catch(e) { try { this.pdf.setFont('helvetica', variant); } catch(_) {} } this.pdf.setFontSize(style.size || 12); }
+            textWidth(text, style) { try { this.setFont(style); return this.pdf.getTextWidth(text); } catch(e) { return (style.size || 12) * 0.5 * (text || '').length; } }
+            ensureSpace(h) { if (this.y + h > this.pageH - this.marginBottom) { this.pdf.addPage(); this.y = this.marginTop; } }
+            addPageNumbers() { const total = this.pdf.internal.getNumberOfPages(); for (let i = 1; i <= total; i++) { this.pdf.setPage(i); this.pdf.setFont('helvetica', 'normal'); this.pdf.setFontSize(9); this.pdf.setTextColor(148, 163, 184); this.pdf.text(`${i} / ${total}`, this.pageW - this.marginX - 30, this.pageH - 24); } }
+        }
+        const inputBox = document.getElementById('inputBox'); const outputBox = document.getElementById('outputBox'); const tabInputBtn = document.getElementById('tabInput'); const tabOutputBtn = document.getElementById('tabOutput'); const apiKeyInput = document.getElementById('apiKeyInput'); const apiUrlInput = document.getElementById('apiUrlInput'); const modelInput = document.getElementById('modelInput'); const toastContainer = document.getElementById('toastContainer'); const btnAiGenerate = document.getElementById('btnAiGenerate'); const btnTest = document.getElementById('btnTest'); const waitingOverlay = document.getElementById('waitingOverlay'); const waitingElapsed = document.getElementById('waitingElapsed');
+        const DEFAULT_URL = 'http://127.0.0.1:8787/v1'; const DEFAULT_MODEL = 'samu'; const DEFAULT_KEY = 'samu123456';
+        let activeAbortController = null; let activePrompt = ''; let waitingStartTime = 0; let waitingTimer = null;
+        function switchTab(tabName) { if (tabName === 'input') { inputBox.style.display = 'block'; outputBox.style.display = 'none'; tabInputBtn.classList.add('active'); tabOutputBtn.classList.remove('active'); inputBox.focus(); } else { syncBoxes(); inputBox.style.display = 'none'; outputBox.style.display = 'block'; tabInputBtn.classList.remove('active'); tabOutputBtn.classList.add('active'); } }
+        inputBox.addEventListener('input', syncBoxes);
+        function syncBoxes() { outputBox.innerHTML = inputBox.innerHTML; Array.from(outputBox.childNodes).forEach(node => { if (node.nodeType === 3 && node.textContent.trim() !== '') { const wrapper = document.createElement('div'); wrapper.textContent = node.textContent; outputBox.replaceChild(wrapper, node); } }); }
+        function clearAll() { if (confirm("Clear all content from editor?")) { inputBox.innerHTML = ''; syncBoxes(); switchTab('input'); showToast("Workspace cleared.", "info"); } }
+        function saveApi() { localStorage.setItem('api_url', apiUrlInput.value.trim() || DEFAULT_URL); localStorage.setItem('api_model', modelInput.value.trim() || DEFAULT_MODEL); localStorage.setItem('api_key', apiKeyInput.value.trim()); showToast("Settings saved!", "success"); }
+        function deleteApi() { ['api_url','api_model','api_key'].forEach(k => localStorage.removeItem(k)); apiUrlInput.value = DEFAULT_URL; modelInput.value = DEFAULT_MODEL; apiKeyInput.value = DEFAULT_KEY; btnTest.classList.remove('ok', 'fail'); showToast("Settings reset.", "info"); }
+        function loadApi() { apiUrlInput.value = localStorage.getItem('api_url') || DEFAULT_URL; modelInput.value = localStorage.getItem('api_model') || DEFAULT_MODEL; const key = localStorage.getItem('api_key'); apiKeyInput.value = key !== null ? key : DEFAULT_KEY; }
+        document.addEventListener('selectionchange', () => { if (document.activeElement !== inputBox) return; ['bold','italic','underline','insertUnorderedList','insertOrderedList'].forEach(cmd => { const btn = document.getElementById('btn-' + cmd); if (btn) btn.classList.toggle('active-style', document.queryCommandState(cmd)); }); });
+        function formatText(command, value = null) { switchTab('input'); document.execCommand(command, false, value); syncBoxes(); inputBox.focus(); }
+        function formatCode() { switchTab('input'); const sel = window.getSelection(); if (!sel.rangeCount) return; const txt = sel.toString(); if (txt) { document.execCommand('insertHTML', false, `<code>${txt}</code>`); syncBoxes(); } }
+        function wrapHighlightBox() { switchTab('input'); const sel = window.getSelection(); if (!sel.rangeCount) return; const range = sel.getRangeAt(0); if (!inputBox.contains(range.commonAncestorContainer)) return; const content = range.extractContents(); const wrapper = document.createElement('div'); wrapper.style.cssText = 'background:#f8fafc;border-left:4px solid #3b82f6;padding:15px 20px;margin:15px 0;border-radius:0 8px 8px 0;'; wrapper.appendChild(content); range.insertNode(wrapper); sel.removeAllRanges(); const nr = document.createRange(); nr.setStartAfter(wrapper); sel.addRange(nr); syncBoxes(); }
+        async function testConnection() { const baseUrl = apiUrlInput.value.trim() || DEFAULT_URL; const apiKey = apiKeyInput.value.trim(); const modelsUrl = baseUrl.replace(/\/+$/, '') + '/models'; btnTest.disabled = true; btnTest.textContent = '⏳ ...'; btnTest.classList.remove('ok', 'fail'); try { const headers = {}; if (apiKey) headers['Authorization'] = `Bearer ${apiKey}`; const res = await fetch(modelsUrl, { method: 'GET', headers }); if (!res.ok) throw new Error(`HTTP ${res.status}`); const data = await res.json().catch(() => ({})); const names = (data.data || data.models || []).map(m => m.id || m.name || 'samu'); btnTest.classList.add('ok'); btnTest.textContent = '✅ OK'; showToast(`✅ Bridge OK · ${names.join(', ') || 'samu'}`, "success"); setTimeout(() => { btnTest.textContent = '🔌 Test'; btnTest.disabled = false; }, 3000); } catch(e) { btnTest.classList.add('fail'); btnTest.textContent = '❌ Fail'; showToast(`❌ ${e.message || 'Cannot reach Bridge'}`, "error"); setTimeout(() => { btnTest.textContent = '🔌 Test'; btnTest.disabled = false; }, 4000); } }
+        function showWaitingUI(show, prompt = '') { if (show) { activePrompt = prompt; waitingStartTime = Date.now(); waitingElapsed.textContent = '0s'; waitingOverlay.style.display = 'flex'; if (waitingTimer) clearInterval(waitingTimer); waitingTimer = setInterval(() => { waitingElapsed.textContent = `${Math.round((Date.now() - waitingStartTime)/1000)}s`; }, 1000); } else { waitingOverlay.style.display = 'none'; if (waitingTimer) { clearInterval(waitingTimer); waitingTimer = null; } activePrompt = ''; } }
+        function cancelAIGenerate() { if (activeAbortController) activeAbortController.abort(); }
+        async function copyPromptToClipboard() { if (!activePrompt) return; try { await navigator.clipboard.writeText(activePrompt); showToast("✅ Copied!", "success"); } catch(_) { const ta = document.createElement('textarea'); ta.value = activePrompt; ta.style.cssText = 'position:fixed;left:-9999px;'; document.body.appendChild(ta); ta.select(); try { document.execCommand('copy'); showToast("✅ Copied!", "success"); } catch { showToast("❌ Copy failed", "error"); } document.body.removeChild(ta); } }
+        function buildPrompt(rawHTML, styleContext) { const spec = { "Default": `Professional layout.`, "Educational": `H1 titles, definition tables, ⭐ key points.`, "Math": `Monospace formula boxes, numbered steps.` }[styleContext] || `Professional formatting.`; return `Format the following content as professional HTML for a PDF document.\n\nSTYLE: ${styleContext}\n${spec}\n\nOUTPUT REQUIREMENTS:\n- Output ONLY raw HTML — no \`\`\` fences, no explanations\n- No <html>, <head>, <body>, or <style> tags — inner content only\n- Use INLINE styles only\n- Preserve every word, number, and fact EXACTLY\n\nCONTENT TO FORMAT:\n${rawHTML}`; }
+        async function generateAIDesign() { const rawText = inputBox.innerText.trim(); const rawHTML = inputBox.innerHTML.trim(); if (!rawText) { showToast("Type something first.", "warning"); return; } const styleContext = document.getElementById('aiStyle').value; const baseUrl = apiUrlInput.value.trim() || DEFAULT_URL; const model = modelInput.value.trim() || DEFAULT_MODEL; const apiKey = apiKeyInput.value.trim(); const prompt = buildPrompt(rawHTML, styleContext); const endpoint = baseUrl.replace(/\/+$/, '') + '/chat/completions'; const headers = { 'Content-Type': 'application/json' }; if (apiKey) headers['Authorization'] = `Bearer ${apiKey}`; const payload = { model, messages: [{ role:'user', content: prompt }], stream:false }; activeAbortController = new AbortController(); btnAiGenerate.disabled = true; btnAiGenerate.innerHTML = "⏳ Waiting..."; showWaitingUI(true, prompt); try { const res = await fetch(endpoint, { method:'POST', headers, body: JSON.stringify(payload), signal: activeAbortController.signal }); if (!res.ok) throw new Error(`HTTP ${res.status}`); const text = await res.text(); let content = parseAIResponse(text); content = content.replace(/^```html\s*/i, '').replace(/^```\s*/, '').replace(/```\s*$/i, '').trim(); if (!content) throw new Error("Empty response"); inputBox.innerHTML = content; syncBoxes(); showToast(`✅ Rendered! (${content.length} chars)`, "success"); switchTab('output'); } catch(e) { if (e.name === 'AbortError') showToast("Cancelled.", "info"); else showToast(`❌ ${e.message || 'Bridge error'}`, "error"); } finally { activeAbortController = null; showWaitingUI(false); btnAiGenerate.disabled = false; btnAiGenerate.innerHTML = "✨ AI Generate"; } }
+        function parseAIResponse(raw) { if (!raw || !raw.trim()) throw new Error("Empty response"); const t = raw.trim(); try { return extractContent(JSON.parse(t)); } catch(_) {} if (t.startsWith('data:') || t.includes('\ndata:')) { let combined = ''; let last = null; t.split(/\r?\n/).forEach(line => { if (!line.startsWith('data:')) return; const body = line.slice(5).trim(); if (!body || body === '[DONE]') return; try { const o = JSON.parse(body); last = o; const d = o.choices?.[0]?.delta?.content || o.choices?.[0]?.message?.content || o.message?.content || ''; if (d) combined += d; } catch(_) {} }); if (combined) return combined; if (last) return extractContent(last); } if (/<[a-z][\s\S]*>/i.test(t)) return t; throw new Error("Unknown response format"); }
+        function extractContent(data) { let c = data.choices?.[0]?.message?.content ?? data.choices?.[0]?.text ?? data.message?.content ?? data.content ?? data.response; if (Array.isArray(c)) c = c.map(p => p.text || p.content || '').join(''); if (c == null) throw new Error("No content. Keys: " + Object.keys(data).join(',')); return String(c).trim(); }
+        async function downloadPDF() { switchTab('output'); if (!window.jspdf || !window.jspdf.jsPDF) { showToast("❌ PDF engine not loaded.", "error"); return; } showToast(`Generating PDF...`, "info"); try { const renderer = new HTMLToPDF(window.jspdf); await renderer.generateAsync(outputBox); const totalPages = renderer.pdf.internal.getNumberOfPages(); if (window.cordova) { const dataUri = renderer.pdf.output('datauristring'); saveAndOpenCordovaPDF(dataUri, 'AI_Document.pdf'); showToast(`✅ Generated ${totalPages} pages!`, "success"); } else { renderer.pdf.save('AI_Document.pdf'); showToast(`✅ PDF Downloaded! (${totalPages} pages)`, "success"); } } catch(e) { console.error("PDF error:", e); showToast(`❌ PDF failed: ${e.message}`, "error"); } }
+        function saveAndOpenCordovaPDF(dataUri, fileName) { try { const base64 = dataUri.split(',')[1]; const bin = atob(base64); const bytes = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i); const blob = new Blob([bytes], { type: 'application/pdf' }); if (window.cordova && cordova.file) { const downloadDir = cordova.file.externalRootDirectory + 'Download/'; window.resolveLocalFileSystemURL(downloadDir, (dirEntry) => { dirEntry.getFile(fileName, { create: true, exclusive: false }, (fileEntry) => { fileEntry.createWriter((fileWriter) => { fileWriter.onwriteend = () => { showToast("✅ Saved to Downloads folder!", "success"); if (cordova.plugins && cordova.plugins.fileOpener2) { cordova.plugins.fileOpener2.open(fileEntry.nativeURL, 'application/pdf', { error: function(e) { showToast("File saved in Downloads. Open it via WPS Office.", "warning"); } }); } else { showToast("File saved. Open it in Downloads folder.", "warning"); } }; fileWriter.onerror = () => showToast("❌ File write error", "error"); fileWriter.write(blob); }); }); }); } else { const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = fileName; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url); showToast("✅ PDF Downloaded!", "success"); } } catch (err) { showToast("❌ Data processing error", "error"); } }
+        function showToast(msg, type = 'info') { const t = document.createElement('div'); t.className = `toast ${type}`; t.innerText = msg; toastContainer.appendChild(t); setTimeout(() => { t.style.animation = 'slideIn 0.3s ease-out reverse'; t.style.opacity = '0'; setTimeout(() => t.remove(), 300); }, 5000); }
+        window.onload = () => { loadApi(); switchTab('input'); };
+    </script>
+</body>
+</html>
